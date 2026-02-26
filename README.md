@@ -26,6 +26,7 @@ Ensure zero-downtime deployments
 Support rollback on failure
 
 ## Architecture
+```text
 GitHub Push
     ↓
 GitHub Actions
@@ -39,25 +40,30 @@ Update ECS Task Definition
 Trigger CodeDeploy Deployment
     ↓
 Blue/Green Traffic Shift via ALB
+```
 
 ## Repository Structure
-.github/workflows/
-    terraform.yml
-    cd.yml
-    ci.yml
-
-modules/
-    vpc/
-    security_groups/
-    alb/
-    ecs/
-    rds/
-    codedeploy/
-
-main.tf
-variables.tf
-outputs.tf
-providers.tf
+```text
+.
+├── .github/
+│   └── workflows/
+│       ├── terraform.yml
+│       ├── ci.yml
+│       └── cd.yml
+│
+├── modules/
+│   ├── vpc/
+│   ├── security_groups/
+│   ├── alb/
+│   ├── ecs/
+│   ├── rds/
+│   └── codedeploy/
+│
+├── main.tf
+├── variables.tf
+├── outputs.tf
+└── providers.tf
+```
 
 ## Rollback Strategy
 
