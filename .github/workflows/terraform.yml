@@ -5,9 +5,9 @@ on:
     branches:
       - main
     paths:
-      - "modules/**"
-      - "main.tf"
-      - "variables.tf"
+      - "**/*.tf"
+      
+  workflow_dispatch:
 
 jobs:
   terraform:
