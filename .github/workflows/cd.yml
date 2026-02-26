@@ -96,7 +96,7 @@ jobs:
         run: |
           aws s3 cp appspec.json s3://${S3_BUCKET}/appspec.json
 
-      # 🔥 Trigger Deployment (with step ID)
+  
       - name: Trigger CodeDeploy Deployment
         id: deploy
         run: |
@@ -118,13 +118,13 @@ jobs:
           echo "deployment_id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
           echo "Deployment ID: $DEPLOYMENT_ID"
 
-      # 🔍 Wait for deployment
+
       - name: Wait for Deployment to Succeed
         run: |
           aws deploy wait deployment-successful \
             --deployment-id ${{ steps.deploy.outputs.deployment_id }}
 
-      # 🔄 Rollback if deployment fails
+
       - name: Rollback if failed
         if: failure()
         run: |
