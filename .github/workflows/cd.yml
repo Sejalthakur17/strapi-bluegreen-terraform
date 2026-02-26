@@ -9,12 +9,12 @@ on:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: sejal-strapi-bluegreen
-  TASK_DEFINITION_FAMILY: sejal-bluegreen-task   # 👈 keeping your original name
+  TASK_DEFINITION_FAMILY: sejal-bluegreen-task
   CONTAINER_NAME: sejal-strapi
   CONTAINER_PORT: 1337
   CODEDEPLOY_APPLICATION: sejal-strapi-codedeploy-app
   CODEDEPLOY_DEPLOYMENT_GROUP: strapi-deployment-group
-  S3_BUCKET: sejal-task-10   # must exist
+  S3_BUCKET: sejal-task-10
 
 jobs:
   deploy:
@@ -29,7 +29,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Get AWS Account ID
@@ -96,7 +96,9 @@ jobs:
         run: |
           aws s3 cp appspec.json s3://${S3_BUCKET}/appspec.json
 
+      # 🔥 Trigger Deployment (with step ID)
       - name: Trigger CodeDeploy Deployment
+        id: deploy
         run: |
           DEPLOYMENT_ID=$(aws deploy create-deployment \
           --application-name $CODEDEPLOY_APPLICATION \
@@ -105,20 +107,28 @@ jobs:
           --revision '{
             "revisionType": "S3",
             "s3Location": {
-            "bucket": "'"${S3_BUCKET}"'",
-            "key": "appspec.json",
-            "bundleType": "JSON"
-           }
-           }' \
+              "bucket": "'"${S3_BUCKET}"'",
+              "key": "appspec.json",
+              "bundleType": "JSON"
+            }
+          }' \
           --query deploymentId \
           --output text)
 
-          echo "DEPLOYMENT_ID=$DEPLOYMENT_ID" >> $GITHUB_ENV
+          echo "deployment_id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
           echo "Deployment ID: $DEPLOYMENT_ID"
 
+      # 🔍 Wait for deployment
       - name: Wait for Deployment to Succeed
         run: |
           aws deploy wait deployment-successful \
-            --deployment-id $DEPLOYMENT_ID
+            --deployment-id ${{ steps.deploy.outputs.deployment_id }}
 
-          echo "Deployment successful!"
+      # 🔄 Rollback if deployment fails
+      - name: Rollback if failed
+        if: failure()
+        run: |
+          echo "Deployment failed. Initiating rollback..."
+          aws deploy stop-deployment \
+            --deployment-id ${{ steps.deploy.outputs.deployment_id }} \
+            --auto-rollback-enabled
